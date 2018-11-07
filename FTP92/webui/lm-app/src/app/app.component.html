@@ -1,0 +1,40 @@
+<div style="text-align:center">
+  <h1>
+    Welcome to {{title}}!
+  </h1>
+</div>
+<div>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Employee ID</th>
+                <th>Employee Name</th>
+                <th>Email</th>
+                <th>Phone Number</th>
+                <th>Manager ID</th>
+            </tr>
+        </thead>
+        <tbody class="employees">
+            <tr *ngFor="let employee of employees">
+                <td>
+                    <h5>{{employee.empId}}</h5>
+                </td>
+                <td>
+                    <h5>{{employee.name}}</h5>
+                </td>
+                <td>
+                    <h5>{{employee.email}}</h5>
+                </td>
+                <td>
+                    <h5>{{employee.phoneNumber}}</h5>
+                </td>
+                <td>
+                    <h5>{{employee.mgrId}}</h5>
+                </td>
+                <td>
+                    <button>Login</button>
+                </td>                
+            </tr>
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,75 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>Template job for integration tests</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>INTEGRATION_HOST</name>
+          <description></description>
+          <defaultValue>ec2-52-71-15-201.compute-1.amazonaws.com</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>TAR_FILE</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.scm.NullSCM"/>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>/usr/local/bin/aws s3 cp s3://com.hexaware.builds.ftp92/$TAR_FILE $TAR_FILE
+tar -xvzf $TAR_FILE
+#deploy
+scp -i ~/.ssh/ftp_jenkins.pem ftp92.war centos@$INTEGRATION_HOST:/home/centos/apache-tomcat-8.5.23/webapps
+#database
+mysql --host ftp-integration.c1jpaaszplju.us-east-1.rds.amazonaws.com -u ftp92 -pftp92 ftp92 &lt; database.ddl
+mysql --host ftp-integration.c1jpaaszplju.us-east-1.rds.amazonaws.com -u ftp92 -pftp92 ftp92 &lt; database.dml
+#rest tests
+rm -rf restservice
+mkdir -p restservice/integration-test/src/test/java
+cd restservice/integration-test/src/test/java
+jar -xvf ../../../../../ftp92-integration-tests-1.0-test-sources.jar
+cd ../../../
+cp ./src/test/java/META-INF/maven/com.hexa/ftp92-integration-tests/pom.xml .
+/var/lib/jenkins/apache-maven-3.5.2/bin/mvn test -Dservice.host=$INTEGRATION_HOST -Dservice.webapp=ftp92
+#protractor tests
+cd ../..
+tar -xvzf lm-app.zip
+cd lm-app
+./node_modules/protractor/bin/protractor --baseUrl &quot;http://$INTEGRATION_HOST:8080/&quot;</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.junit.JUnitResultArchiver plugin="junit@1.21">
+      <testResults>restservice/integration-test/target/surefire-reports/*.xml, lm-app/output/*.xml</testResults>
+      <keepLongStdio>false</keepLongStdio>
+      <healthScaleFactor>1.0</healthScaleFactor>
+      <allowEmptyResults>false</allowEmptyResults>
+    </hudson.tasks.junit.JUnitResultArchiver>
+    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger@2.35.2">
+      <configs>
+        <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+          <configs>
+            <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+          </configs>
+          <projects>ftp92-50-STAGING, </projects>
+          <condition>SUCCESS</condition>
+          <triggerWithNoParameters>false</triggerWithNoParameters>
+          <triggerFromChildProjects>false</triggerFromChildProjects>
+        </hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
+      </configs>
+    </hudson.plugins.parameterizedtrigger.BuildTrigger>
+  </publishers>
+  <buildWrappers/>
+</project>
